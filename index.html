@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mochi Studio — 나만의 감성 개인 웹사이트 &amp; 포토 게시판</title>
+  <meta name="description" content="피그마 스타일의 모던한 개인 웹사이트. 귀여운 벡터 캐릭터, Supabase 로그인(아이디 저장), 이미지 업로드 게시판을 지원합니다." />
+
+  <!-- Fonts: Pretendard & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+
+  <link rel="stylesheet" href="./styles.css" />
+
+  <!-- Supabase JS v2 SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <!-- ====================================================================
+       Sticky Glassmorphic Navbar
+       ==================================================================== -->
+  <header class="navbar">
+    <div class="container navbar-inner">
+      <a href="#top" class="brand" id="brand-home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 36 36" fill="none">
+            <path d="M18 4C18 4 21 1 23 3C25 5 21 8 18 7" stroke="#10B981" stroke-width="2.4" stroke-linecap="round"/>
+            <ellipse cx="18" cy="21" rx="12" ry="10.5" fill="#FFFDF9" stroke="#18181B" stroke-width="2.2"/>
+            <circle cx="13.5" cy="19.5" r="1.6" fill="#18181B"/>
+            <circle cx="22.5" cy="19.5" r="1.6" fill="#18181B"/>
+            <ellipse cx="11.2" cy="22" rx="2" ry="1.2" fill="#FFB4A2"/>
+            <ellipse cx="24.8" cy="22" rx="2" ry="1.2" fill="#FFB4A2"/>
+            <path d="M16 22.5Q18 24.5 20 22.5" stroke="#18181B" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span>Mochi Studio</span>
+      </a>
+
+      <nav class="nav-actions" aria-label="주 메뉴">
+        <button type="button" class="status-chip" id="supabase-status-btn" title="Supabase 연동 설정">
+          <span class="status-dot"></span>
+          <span class="status-text" id="supabase-status-text">데모 모드</span>
+        </button>
+
+        <div id="nav-auth-area">
+          <button type="button" class="btn btn-primary btn-sm" id="open-login-btn">로그인</button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- ====================================================================
+         Hero Section (Figma Editorial Layout + Interactive Cute Vector Mascot)
+         ==================================================================== -->
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="hero-eyebrow">
+            <span class="hero-eyebrow-tag">Personal Space</span>
+            <span>기록과 영감이 머무는 작은 작업실</span>
+          </div>
+
+          <h1 class="hero-title">
+            일상의 조각을 <span class="highlight">귀엽고 담백하게</span> 기록해요.
+          </h1>
+
+          <p class="hero-desc">
+            피그마의 정갈한 레이아웃 감성과 귀여운 벡터 친구들이 함께하는 개인 공간입니다.
+            로그인 후 사진과 함께 오늘의 이야기를 자유롭게 남겨보세요.
+          </p>
+
+          <div class="hero-cta">
+            <a href="#board" class="btn btn-accent" id="hero-board-cta">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="4"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <path d="m21 15-5-5L5 21"/>
+              </svg>
+              게시판 둘러보기
+            </a>
+            <button type="button" class="btn btn-secondary" id="hero-write-cta">
+              새 글 남기기
+            </button>
+          </div>
+
+          <div class="hero-meta-row">
+            <div class="hero-stat">
+              <span class="hero-stat-value" id="stat-posts">0</span>
+              <span class="hero-stat-label">등록된 이야기</span>
+            </div>
+            <div class="hero-stat">
+              <span class="hero-stat-value" id="stat-photos">0</span>
+              <span class="hero-stat-label">공유된 사진</span>
+            </div>
+            <div class="hero-stat">
+              <span class="hero-stat-value" id="stat-mode">Local Demo</span>
+              <span class="hero-stat-label">연동 상태</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Cute Vector Character Stage -->
+        <div class="mascot-stage">
+          <div class="figma-frame-label">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FF6B4A" stroke-width="2.5">
+              <path d="M5 5h14v14H5z"/>
+            </svg>
+            Mochi_Mascot.svg
+          </div>
+
+          <div class="speech-bubble" id="mascot-bubble">
+            안녕! 나 모찌야, 클릭해볼래? ✨
+          </div>
+
+          <div class="mascot-svg-wrap" id="hero-mascot" role="button" tabindex="0" aria-label="귀여운 캐릭터 모찌와 인사하기">
+            <svg viewBox="0 0 240 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- Soft Ground Shadow -->
+              <ellipse cx="120" cy="198" rx="64" ry="11" fill="#EAE5DB"/>
+
+              <!-- Tiny Sprout on Head -->
+              <path d="M120 46C120 32 128 22 140 20C140 32 132 42 120 46Z" fill="#34D399" stroke="#18181B" stroke-width="3" stroke-linejoin="round"/>
+              <path d="M120 46C120 34 111 25 100 24C100 35 109 43 120 46Z" fill="#6EE7B7" stroke="#18181B" stroke-width="3" stroke-linejoin="round"/>
+              <path d="M120 55V44" stroke="#18181B" stroke-width="3.2" stroke-linecap="round"/>
+
+              <!-- Cute Round Ears -->
+              <circle cx="72" cy="76" r="20" fill="#FFFDF9" stroke="#18181B" stroke-width="3.5"/>
+              <circle cx="72" cy="76" r="10" fill="#FFD6CC"/>
+              <circle cx="168" cy="76" r="20" fill="#FFFDF9" stroke="#18181B" stroke-width="3.5"/>
+              <circle cx="168" cy="76" r="10" fill="#FFD6CC"/>
+
+              <!-- Main Chubby Body -->
+              <path d="M52 130C52 84 82 54 120 54C158 54 188 84 188 130C188 168 160 186 120 186C80 186 52 168 52 130Z" fill="#FFFDF9" stroke="#18181B" stroke-width="3.5"/>
+
+              <!-- Soft Belly Patch -->
+              <ellipse cx="120" cy="148" rx="38" ry="26" fill="#FEF6D8"/>
+
+              <!-- Left & Right Little Arms -->
+              <path d="M56 126C40 122 36 106 46 98C55 92 64 104 66 116" fill="#FFFDF9" stroke="#18181B" stroke-width="3.5" stroke-linecap="round"/>
+              <path d="M184 126C200 122 204 106 194 98C185 92 176 104 174 116" fill="#FFFDF9" stroke="#18181B" stroke-width="3.5" stroke-linecap="round"/>
+
+              <!-- Cute Little Feet -->
+              <ellipse cx="92" cy="184" rx="14" ry="8" fill="#FFFDF9" stroke="#18181B" stroke-width="3.5"/>
+              <ellipse cx="148" cy="184" rx="14" ry="8" fill="#FFFDF9" stroke="#18181B" stroke-width="3.5"/>
+
+              <!-- Blinking Eyes -->
+              <g class="mascot-eye">
+                <circle cx="94" cy="108" r="6.5" fill="#18181B"/>
+                <circle cx="96.2" cy="105.5" r="2.2" fill="#FFFFFF"/>
+              </g>
+              <g class="mascot-eye">
+                <circle cx="146" cy="108" r="6.5" fill="#18181B"/>
+                <circle cx="148.2" cy="105.5" r="2.2" fill="#FFFFFF"/>
+              </g>
+
+              <!-- Rosy Cheeks -->
+              <ellipse cx="78" cy="120" rx="9" ry="5.5" fill="#FFB4A2" opacity="0.85"/>
+              <ellipse cx="162" cy="120" rx="9" ry="5.5" fill="#FFB4A2" opacity="0.85"/>
+
+              <!-- Happy Mouth -->
+              <path d="M111 116C113 121 117 121 120 117C123 121 127 121 129 116" stroke="#18181B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+              <!-- Tiny Floating Heart Sticker -->
+              <path d="M196 64C196 60.5 200.5 58.5 203 61.5C205.5 58.5 210 60.5 210 64C210 68.5 203 72.5 203 72.5C203 72.5 196 68.5 196 64Z" fill="#FF6B4A" stroke="#18181B" stroke-width="2"/>
+            </svg>
+          </div>
+
+          <p class="mascot-caption">캐릭터를 클릭하면 인사를 건네요</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         Image-Enabled Bulletin Board Section
+         ==================================================================== -->
+    <section class="board-section" id="board">
+      <div class="container">
+        <div class="board-toolbar">
+          <div class="board-heading-wrap">
+            <h2 class="board-title">포토 게시판</h2>
+            <span class="post-count-badge" id="post-count-badge">0개</span>
+          </div>
+
+          <div class="board-controls">
+            <div class="category-tabs" role="tablist" aria-label="카테고리 필터">
+              <button type="button" class="cat-tab active" data-category="전체">전체</button>
+              <button type="button" class="cat-tab" data-category="일상">일상</button>
+              <button type="button" class="cat-tab" data-category="작업노트">작업노트</button>
+              <button type="button" class="cat-tab" data-category="사진첩">사진첩</button>
+            </div>
+
+            <div class="search-box">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.3-4.3"/>
+              </svg>
+              <input type="search" class="search-input" id="search-input" placeholder="제목·내용 검색..." aria-label="게시글 검색" />
+            </div>
+
+            <button type="button" class="btn btn-accent btn-sm" id="toggle-composer-btn">
+              + 글쓰기
+            </button>
+          </div>
+        </div>
+
+        <!-- Post Composer -->
+        <div class="composer-card" id="composer-card">
+          <div class="composer-header">
+            <h3>새 이야기 작성하기</h3>
+            <button type="button" class="btn btn-ghost btn-sm" id="close-composer-btn">닫기</button>
+          </div>
+
+          <form id="post-form" class="form-grid">
+            <div class="form-row-2">
+              <div>
+                <label class="field-label" for="post-category">카테고리</label>
+                <select id="post-category" class="select-control">
+                  <option value="일상">일상</option>
+                  <option value="작업노트">작업노트</option>
+                  <option value="사진첩">사진첩</option>
+                </select>
+              </div>
+              <div>
+                <label class="field-label" for="post-title">제목</label>
+                <input type="text" id="post-title" class="input-control" placeholder="오늘의 제목을 입력하세요" required maxlength="80" />
+              </div>
+            </div>
+
+            <div>
+              <label class="field-label" for="post-content">내용</label>
+              <textarea id="post-content" class="textarea-control" placeholder="나누고 싶은 생각이나 작업 기록을 적어보세요..." required maxlength="1000"></textarea>
+            </div>
+
+            <div>
+              <label class="field-label">이미지 첨부 (선택)</label>
+              <div class="dropzone" id="image-dropzone" tabindex="0" role="button" aria-label="이미지 업로드 영역">
+                <input type="file" id="post-image-input" accept="image/*" hidden />
+                <div class="dropzone-hint">클릭하거나 이미지를 여기로 드래그하세요</div>
+                <div class="dropzone-sub">PNG, JPG, WEBP 지원 (자동 최적화)</div>
+              </div>
+              <div class="image-preview-wrap" id="image-preview-wrap" style="display: none;">
+                <img id="image-preview" alt="업로드할 이미지 미리보기" />
+                <button type="button" class="remove-img-btn" id="remove-image-btn" title="이미지 제거">✕</button>
+              </div>
+            </div>
+
+            <div class="composer-footer">
+              <button type="button" class="btn btn-secondary" id="cancel-post-btn">취소</button>
+              <button type="submit" class="btn btn-accent" id="submit-post-btn">게시하기</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Posts Grid -->
+        <div class="posts-grid" id="posts-grid"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <span>© 2026 Mochi Studio. Crafted with Figma-inspired minimalism &amp; Supabase.</span>
+      <span>개인용 웹 공간 · 이미지 게시판 · 아이디 저장 로그인</span>
+    </div>
+  </footer>
+
+  <!-- ====================================================================
+       Auth Modal (Supabase Login / Sign Up + 아이디 저장)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+    <div class="modal-card">
+      <button type="button" class="modal-close" id="close-auth-modal" aria-label="로그인 창 닫기">✕</button>
+
+      <div class="auth-mascot-header">
+        <!-- Cute Peeking Character Kiki -->
+        <svg width="76" height="68" viewBox="0 0 96 86" fill="none">
+          <circle cx="28" cy="24" r="11" fill="#FFFDF9" stroke="#18181B" stroke-width="2.8"/>
+          <circle cx="28" cy="24" r="5" fill="#FFD6CC"/>
+          <circle cx="68" cy="24" r="11" fill="#FFFDF9" stroke="#18181B" stroke-width="2.8"/>
+          <circle cx="68" cy="24" r="5" fill="#FFD6CC"/>
+          <path d="M18 52C18 30 31 18 48 18C65 18 78 30 78 52C78 68 65 76 48 76C31 76 18 68 18 52Z" fill="#FFFDF9" stroke="#18181B" stroke-width="2.8"/>
+          <circle cx="37" cy="45" r="3.4" fill="#18181B"/>
+          <circle cx="59" cy="45" r="3.4" fill="#18181B"/>
+          <ellipse cx="30" cy="52" rx="4.5" ry="2.8" fill="#FFB4A2"/>
+          <ellipse cx="66" cy="52" rx="4.5" ry="2.8" fill="#FFB4A2"/>
+          <path d="M44 50C45.5 53 50.5 53 52 50" stroke="#18181B" stroke-width="2.4" stroke-linecap="round"/>
+          <!-- Tiny Golden Key -->
+          <circle cx="77" cy="63" r="6" fill="#FBBF24" stroke="#18181B" stroke-width="2.2"/>
+          <path d="M77 69V79M77 75H82" stroke="#18181B" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+        <h2 class="auth-title" id="auth-modal-title">Mochi Studio 로그인</h2>
+        <p class="auth-subtitle" id="auth-modal-subtitle">로그인하고 나만의 사진과 글을 기록하세요</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" data-auth-mode="login">로그인</button>
+        <button type="button" class="auth-tab" data-auth-mode="signup">회원가입</button>
+      </div>
+
+      <form id="auth-form" class="form-grid">
+        <div id="signup-name-group" style="display: none;">
+          <label class="field-label" for="auth-name">닉네임</label>
+          <input type="text" id="auth-name" class="input-control" placeholder="예: 모찌작가" maxlength="20" />
+        </div>
+
+        <div id="signup-avatar-group" style="display: none;">
+          <label class="field-label">캐릭터 아바타 선택</label>
+          <div class="avatar-picker" id="avatar-picker"></div>
+        </div>
+
+        <div>
+          <label class="field-label" for="auth-email">아이디 (이메일)</label>
+          <input type="email" id="auth-email" class="input-control" placeholder="hello@mochi.studio" required />
+        </div>
+
+        <div>
+          <label class="field-label" for="auth-password">비밀번호</label>
+          <input type="password" id="auth-password" class="input-control" placeholder="6자 이상 입력" required minlength="6" />
+        </div>
+
+        <div class="checkbox-row" id="remember-id-row">
+          <label class="checkbox-label">
+            <input type="checkbox" id="remember-id-checkbox" />
+            <span>아이디 저장</span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="auth-submit-btn" style="width: 100%; padding: 11px;">
+          로그인하기
+        </button>
+      </form>
+
+      <div class="demo-box" id="demo-login-box">
+        <span><strong>빠른 체험:</strong> 데모 계정으로 바로 시작</span>
+        <button type="button" class="btn btn-secondary btn-sm" id="quick-demo-btn">1초 로그인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       Supabase Settings Modal
+       ==================================================================== -->
+  <div class="modal-backdrop" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="modal-card wide">
+      <button type="button" class="modal-close" id="close-settings-modal" aria-label="설정 창 닫기">✕</button>
+
+      <h2 class="auth-title" id="settings-title" style="margin-top: 0;">Supabase 연동 설정</h2>
+      <p class="auth-subtitle" style="margin-bottom: 18px;">
+        본인의 Supabase 프로젝트 URL과 Anon Key를 입력하면 실제 DB/Auth/Storage와 즉시 연동됩니다.
+        비워두면 브라우저 로컬 데모 모드로 동작합니다.
+      </p>
+
+      <form id="supabase-config-form" class="form-grid">
+        <div>
+          <label class="field-label" for="sb-url-input">Supabase Project URL</label>
+          <input type="url" id="sb-url-input" class="input-control" placeholder="https://your-project-id.supabase.co" />
+        </div>
+        <div>
+          <label class="field-label" for="sb-key-input">Supabase Anon Public Key</label>
+          <input type="text" id="sb-key-input" class="input-control" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." />
+        </div>
+
+        <div style="display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+          <button type="button" class="btn btn-secondary" id="reset-demo-btn">데모 모드로 전환</button>
+          <button type="submit" class="btn btn-accent">연동 저장 및 적용</button>
+        </div>
+      </form>
+
+      <div style="margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--border-hairline);">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <span class="field-label" style="margin-bottom: 0;">Supabase SQL Editor 실행 스크립트 (supabase-schema.sql)</span>
+          <button type="button" class="btn btn-ghost btn-sm" id="copy-sql-btn">SQL 복사</button>
+        </div>
+        <pre class="code-block" id="sql-preview"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       Image Lightbox Modal
+       ==================================================================== -->
+  <div class="modal-backdrop" id="lightbox-modal" role="dialog" aria-modal="true" aria-label="이미지 크게 보기">
+    <img id="lightbox-img" class="lightbox-img" alt="확대된 게시글 이미지" />
+  </div>
+
+  <!-- Toast Notifications -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
