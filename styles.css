@@ -272,6 +272,13 @@ img {
   border-radius: var(--radius-full);
   font-size: 0.86rem;
   font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.user-pill:hover {
+  background: var(--bg-subtle);
+  border-color: var(--border-strong);
 }
 
 .user-avatar-sm {

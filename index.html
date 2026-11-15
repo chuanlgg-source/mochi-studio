@@ -380,6 +380,43 @@
   </div>
 
   <!-- ====================================================================
+       Profile Edit Modal (내 정보 수정)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+    <div class="modal-card">
+      <button type="button" class="modal-close" id="close-profile-modal" aria-label="내 정보 수정 창 닫기">✕</button>
+
+      <div class="auth-mascot-header">
+        <div id="profile-current-avatar" style="width: 56px; height: 56px; border-radius: 50%; background: var(--butter-soft); display: grid; place-items: center; border: 2px solid var(--border-hairline);"></div>
+        <h2 class="auth-title" id="profile-modal-title">내 정보 수정</h2>
+        <p class="auth-subtitle" id="profile-email-display">user@example.com</p>
+      </div>
+
+      <form id="profile-form" class="form-grid">
+        <div>
+          <label class="field-label" for="profile-name-input">닉네임</label>
+          <input type="text" id="profile-name-input" class="input-control" placeholder="새 닉네임을 입력하세요" required maxlength="20" />
+        </div>
+
+        <div>
+          <label class="field-label">캐릭터 아바타 변경</label>
+          <div class="avatar-picker" id="profile-avatar-picker"></div>
+        </div>
+
+        <div>
+          <label class="field-label" for="profile-password-input">새 비밀번호 (변경 시에만 입력)</label>
+          <input type="password" id="profile-password-input" class="input-control" placeholder="변경하지 않으려면 비워두세요 (6자 이상)" minlength="6" />
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px;">
+          <button type="button" class="btn btn-secondary" id="cancel-profile-btn">취소</button>
+          <button type="submit" class="btn btn-accent" id="save-profile-btn">저장하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
        Image Lightbox Modal
        ==================================================================== -->
   <div class="modal-backdrop" id="lightbox-modal" role="dialog" aria-modal="true" aria-label="이미지 크게 보기">

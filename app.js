@@ -195,6 +195,7 @@ create policy "Auth upload images" on storage.objects for insert with check (buc
     searchQuery: '',
     authMode: 'login',
     selectedAvatar: 'mochi',
+    profileAvatar: 'mochi',
     pendingImageFile: null,
     pendingImageDataUrl: null
   };
@@ -255,6 +256,18 @@ create policy "Auth upload images" on storage.objects for insert with check (buc
     resetDemoBtn: document.getElementById('reset-demo-btn'),
     sqlPreview: document.getElementById('sql-preview'),
     copySqlBtn: document.getElementById('copy-sql-btn'),
+
+    // Profile Modal
+    profileModal: document.getElementById('profile-modal'),
+    closeProfileModal: document.getElementById('close-profile-modal'),
+    cancelProfileBtn: document.getElementById('cancel-profile-btn'),
+    profileForm: document.getElementById('profile-form'),
+    profileCurrentAvatar: document.getElementById('profile-current-avatar'),
+    profileEmailDisplay: document.getElementById('profile-email-display'),
+    profileNameInput: document.getElementById('profile-name-input'),
+    profileAvatarPicker: document.getElementById('profile-avatar-picker'),
+    profilePasswordInput: document.getElementById('profile-password-input'),
+    saveProfileBtn: document.getElementById('save-profile-btn'),
 
     // Lightbox & Toast
     lightboxModal: document.getElementById('lightbox-modal'),
@@ -526,19 +539,116 @@ create policy "Auth upload images" on storage.objects for insert with check (buc
       const avatarSvg = AVATAR_SVGS[state.user.avatar] || AVATAR_SVGS.mochi;
       el.navAuthArea.innerHTML = `
         <div style="display:flex; align-items:center; gap:8px;">
-          <div class="user-pill">
+          <button type="button" class="user-pill" id="open-profile-btn" title="내 정보 수정">
             <span class="user-avatar-sm">${avatarSvg}</span>
             <span>${escapeHtml(state.user.name)}</span>
-          </div>
+          </button>
           <button type="button" class="btn btn-ghost btn-sm" id="logout-btn">로그아웃</button>
         </div>
       `;
+      document.getElementById('open-profile-btn').addEventListener('click', openProfileModal);
       document.getElementById('logout-btn').addEventListener('click', handleLogout);
     } else {
       el.navAuthArea.innerHTML = `
         <button type="button" class="btn btn-primary btn-sm" id="open-login-btn">로그인</button>
       `;
       document.getElementById('open-login-btn').addEventListener('click', () => openAuthModal('login'));
+    }
+  }
+
+  function renderProfileAvatarPicker() {
+    el.profileAvatarPicker.innerHTML = Object.entries(AVATAR_SVGS)
+      .map(([key, svg]) => `
+        <button type="button" class="avatar-option ${state.profileAvatar === key ? 'selected' : ''}" data-profile-avatar="${key}" title="${key}">
+          ${svg}
+        </button>
+      `).join('');
+
+    el.profileAvatarPicker.querySelectorAll('.avatar-option').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.profileAvatar = btn.dataset.profileAvatar;
+        el.profileCurrentAvatar.innerHTML = AVATAR_SVGS[state.profileAvatar] || AVATAR_SVGS.mochi;
+        renderProfileAvatarPicker();
+      });
+    });
+  }
+
+  function openProfileModal() {
+    if (!state.user) return;
+    state.profileAvatar = state.user.avatar || 'mochi';
+    el.profileCurrentAvatar.innerHTML = AVATAR_SVGS[state.profileAvatar] || AVATAR_SVGS.mochi;
+    el.profileEmailDisplay.textContent = state.user.email;
+    el.profileNameInput.value = state.user.name || '';
+    el.profilePasswordInput.value = '';
+    renderProfileAvatarPicker();
+    el.profileModal.classList.add('open');
+  }
+
+  function closeProfileModal() {
+    el.profileModal.classList.remove('open');
+  }
+
+  async function handleProfileSubmit(e) {
+    e.preventDefault();
+    if (!state.user) return;
+
+    const newName = el.profileNameInput.value.trim();
+    const newPassword = el.profilePasswordInput.value;
+    const newAvatar = state.profileAvatar;
+
+    if (!newName) return;
+
+    el.saveProfileBtn.disabled = true;
+    el.saveProfileBtn.textContent = '저장 중...';
+
+    try {
+      if (state.isLiveSupabase) {
+        const updatePayload = {
+          data: { name: newName, avatar: newAvatar }
+        };
+        if (newPassword) {
+          updatePayload.password = newPassword;
+        }
+        const { data, error } = await state.supabase.auth.updateUser(updatePayload);
+        if (error) throw error;
+
+        state.user = mapSupabaseUser(data.user);
+
+        // 기존 내 게시글의 작성자 이름/아바타도 함께 동기화
+        await state.supabase
+          .from('posts')
+          .update({ author_name: newName, author_avatar: newAvatar })
+          .eq('user_id', state.user.id);
+
+        state.posts.forEach((p) => {
+          if (p.user_id === state.user.id) {
+            p.author_name = newName;
+            p.author_avatar = newAvatar;
+          }
+        });
+      } else {
+        state.user.name = newName;
+        state.user.avatar = newAvatar;
+        localStorage.setItem(STORAGE_KEYS.DEMO_USER, JSON.stringify(state.user));
+
+        state.posts.forEach((p) => {
+          if (p.user_id === state.user.id) {
+            p.author_name = newName;
+            p.author_avatar = newAvatar;
+          }
+        });
+        localStorage.setItem(STORAGE_KEYS.DEMO_POSTS, JSON.stringify(state.posts));
+      }
+
+      closeProfileModal();
+      renderNavAuth();
+      renderPosts();
+      showToast(newPassword ? '내 정보와 비밀번호가 변경되었습니다! ✨' : '내 정보가 수정되었습니다! ✨', 'success');
+    } catch (err) {
+      showToast(err.message || '정보 수정 중 오류가 발생했습니다.', 'error');
+    } finally {
+      el.saveProfileBtn.disabled = false;
+      el.saveProfileBtn.textContent = '저장하기';
     }
   }
 
@@ -945,6 +1055,14 @@ create policy "Auth upload images" on storage.objects for insert with check (buc
       await navigator.clipboard.writeText(SQL_SCHEMA_TEXT);
       showToast('SQL 스키마가 클립보드에 복사되었습니다!', 'success');
     });
+
+    // Profile Modal
+    el.closeProfileModal.addEventListener('click', closeProfileModal);
+    el.cancelProfileBtn.addEventListener('click', closeProfileModal);
+    el.profileModal.addEventListener('click', (e) => {
+      if (e.target === el.profileModal) closeProfileModal();
+    });
+    el.profileForm.addEventListener('submit', handleProfileSubmit);
 
     // Lightbox
     el.lightboxModal.addEventListener('click', () => {
